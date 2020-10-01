@@ -1,0 +1,75 @@
+version: "3.7"
+services:
+  nginx:
+    build:
+      context: "./nginx"
+      args:
+        VERSION: "latest"
+    container_name: nginx
+    volumes:
+      - ~/www/php:/var/www/php:delegated
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - php73
+      - php74
+    links:
+      - php73
+      - php74
+    tty: true
+    networks:
+      appnet:
+        aliases:
+          - app1.devlocal.com
+          - app2.devlocal.com
+          - app3.devlocal.com
+  php73:
+    build:
+      context: "./php-fpm-73/"
+      args:
+        PHP_VERSION: "7.3"
+    restart: always
+    container_name: php73
+    working_dir: /var/www/php
+    volumes:
+      - ~/www:/var/www:delegated
+    links:
+      - db
+    depends_on:
+      - db
+    networks:
+      - appnet
+  php74:
+    build:
+      context: "./php-fpm-74/"
+      args:
+        PHP_VERSION: "7.4"
+    restart: always
+    container_name: php74
+    working_dir: /var/www/php
+    volumes:
+      - ~/www:/var/www:delegated
+    links:
+      - db
+    depends_on:
+      - db
+    networks:
+      - appnet
+  db:
+    image: mysql:5.7.27
+    restart: always
+    container_name: mysql
+    ports:
+      - 3307:3306
+    volumes:
+      - ~/mysql/data:/var/lib/mysql:delegated
+    networks:
+      - appnet
+    environment:
+      MYSQL_ROOT_PASSWORD: turisas
+      MYSQL_USER: "admin"
+      MYSQL_PASSWORD: "docker-compose"
+networks:
+  appnet:
+    driver: bridge
